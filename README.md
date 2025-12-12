@@ -35,3 +35,22 @@ It capable of accepting and forwarding incoming command via WebSocket protocols.
    
    See [WebSocket Protocol](doc/websocket_protocol.md) for more details on the WebSocket API.
 
+## Command Line Options
+
+You can run `truegearcli --help` to see all available command line options:
+
+```
+Usage: truegearcli [OPTIONS]
+
+Options:
+  -l, --listen-addr <LISTEN_ADDR>
+          Address to listen on for WebSocket connections [default: 127.0.0.1:18233]
+  -e, --electical-effect-ratio <ELECTICAL_EFFECT_RATIO>
+          Electical effect ratio (0.0 to 1.0) [default: 1]
+  -v, --verbose
+          Enable verbose logging
+  -h, --help
+          Print help
+  -V, --version
+          Print version
+```

@@ -18,15 +18,15 @@ use tracing_subscriber::FmtSubscriber;
 #[command(version, about, long_about = None)]
 struct Args {
     // Address to listen on
-    #[arg(short, long, default_value_t = String::from("127.0.0.1:18233"))]
+    #[arg(short, long, default_value_t = String::from("127.0.0.1:18233"), help = "Address to listen on for WebSocket connections")]
     listen_addr: String,
 
     // Electical effect ratio
-    #[arg(short, long, default_value_t = 1 as f32)]
+    #[arg(short, long, default_value_t = 1 as f32, help = "Electical effect ratio (0.0 to 1.0)")]
     electical_effect_ratio: f32,
 
     // show debug logs
-    #[arg(short, long, default_value_t = false)]
+    #[arg(short, long, default_value_t = false, help = "Enable verbose logging")]
     verbose: bool,
 }
 
