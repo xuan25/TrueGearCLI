@@ -1,0 +1,95 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "description": "the tracks of the effect",
+  "type": "object",
+  "properties": {
+    "name": {
+      "description": "name of the effect",
+      "type": "string"
+    },
+    "uuid": {
+      "description": "UUID of the effect",
+      "type": "string"
+    },
+    "keep": {
+      "description": "TODO",
+      "type": "string",
+      "enum": [ "True", "False", "true", "false" ]
+    },
+    "priority": {
+      "description": "priority of the effect",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 65535
+    },
+    "tracks": {
+      "description": "the list of tracks in the effect",
+      "type": "array",
+      "items": {
+        "description": "track of the effect",
+        "type": "object",
+        "properties": {
+          "start_time": {
+            "description": "start time of the track in milliseconds",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 65535
+          },
+          "end_time": {
+            "description": "end time of the track in milliseconds",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 65535
+          },
+          "stop_name": {
+            "description": "TODO",
+            "type": "string"
+          },
+          "start_intensity": {
+            "description": "starting intensity of the track",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 150
+          },
+          "end_intensity": {
+            "description": "ending intensity of the track",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 150
+          },
+          "intensity_mode": {
+            "type": "string",
+            "description": "intensity mode of the track",
+            "enum": [ "Const", "Fade", "FadeInAndOut" ]
+          },
+          "action_type": {
+            "type": "string",
+            "description": "action type of the track",
+            "enum": [ "Shake", "Electrical" ]
+          },
+          "once": {
+            "type": "string",
+            "description": "TODO",
+            "enum": [ "True", "False", "true", "false" ]
+          },
+          "interval": {
+            "description": "interval of the track in milliseconds",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 255
+          },
+          "index": {
+            "description": "the list of actuators to apply the track to",
+            "type": "array",
+            "items": {
+              "description": "index of the actuator",
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 255
+            }
+          }
+        }
+      }
+    }
+  }
+}

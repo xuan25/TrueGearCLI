@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "Method": {
+      "type": "string",
+      "description": "command method, has to be 'play_no_registered'",
+      "enum": [ "play_no_registered" ]
+    },
+    "Body": {
+      "type": "string",
+      "description": "the command body in base64 encoding. see effect.schema.json for details"
+    }
+  }
+}
