@@ -139,14 +139,16 @@ impl ControlCommandTrack {
             }
         }
 
+        tracing::debug!("Dot Groups - FL: {:016b}, BL: {:016b}, BR: {:016b}, FR: {:016b}", dot_group_front_left, dot_group_back_left, dot_group_back_right, dot_group_front_right);
+
         buffer.extend([
-            ((dot_group_front_left >> 8) | 0xFF) as u8,
+            ((dot_group_front_left >> 8) & 0xFF) as u8,
             (dot_group_front_left & 0xFF) as u8,
-            ((dot_group_back_left >> 8) | 0xFF) as u8,
+            ((dot_group_back_left >> 8) & 0xFF) as u8,
             (dot_group_back_left & 0xFF) as u8,
-            ((dot_group_back_right >> 8) | 0xFF) as u8,
+            ((dot_group_back_right >> 8) & 0xFF) as u8,
             (dot_group_back_right & 0xFF) as u8,
-            ((dot_group_front_right >> 8) | 0xFF) as u8,
+            ((dot_group_front_right >> 8) & 0xFF) as u8,
             (dot_group_front_right & 0xFF) as u8,
         ]);
 
@@ -342,7 +344,7 @@ impl TrueGearController {
         let mut buffer: Vec<u8> = Vec::new();
         command.write_bytes_to(&mut buffer, self.electical_effect_ratio)?;
 
-        tracing::debug!("Sending command bytes: {:?}", buffer);
+        tracing::debug!("Sending command bytes: {:02X?}", buffer);
 
         self.true_gear_connection.send_data(&buffer).await
     }
