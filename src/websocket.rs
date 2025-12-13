@@ -52,9 +52,11 @@ impl TureGearWebsocketServer {
             
             let msg = msg.unwrap().to_text().unwrap().to_string();
 
-            tracing::info!("Received a message from {}: {}", addr, msg);
+            tracing::debug!("Received a raw message from {}: {}", addr, msg);
 
             let control_command: ControlCommand = serde_json::from_str(&msg)?;
+
+            tracing::info!("Received a message from {}: {:?}", addr, control_command);
 
             match self.true_gear_controller.send_command(control_command).await {
                 Ok(_) => tracing::info!("Command sent successfully"),

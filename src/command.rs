@@ -1,95 +1,104 @@
 use serde::{Deserialize};
-use base64::prelude::*;
 
-#[derive(Deserialize)]
-pub struct ControlCommand {
-    #[serde(alias = "Method")] 
-    pub method: String,
-    #[serde(alias = "Body")] 
-    pub body_base64: String,
-}
+mod body_as_base64_string {
+    use base64::{engine::general_purpose, Engine as _};
+    use serde::de::DeserializeOwned;
+    use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 
-impl ControlCommand {
-    pub fn body(&self) -> Result<ControlCommandBody, Box<dyn std::error::Error + Send + Sync>> {
-        let result = BASE64_STANDARD.decode(&self.body_base64)?;
-        let body: ControlCommandBody = serde_json::from_slice(&result)?;
-        Ok(body)
+    #[allow(dead_code)]
+    pub fn serialize<S, T>(value: &T, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+        T: Serialize,
+    {
+        let bytes = serde_json::to_vec(value).map_err(serde::ser::Error::custom)?;
+        let b64 = general_purpose::STANDARD.encode(bytes);
+        serializer.serialize_str(&b64)
+    }
+
+    #[allow(dead_code)]
+    pub fn deserialize<'de, D, T>(deserializer: D) -> Result<T, D::Error>
+    where
+        D: Deserializer<'de>,
+        T: DeserializeOwned,
+    {
+        let b64 = String::deserialize(deserializer)?;
+        let bytes = general_purpose::STANDARD
+            .decode(b64)
+            .map_err(de::Error::custom)?;
+        // base64 bytes -> struct (from JSON)
+        serde_json::from_slice(&bytes).map_err(de::Error::custom)
     }
 }
 
+mod bool_as_string {
+    use serde::{Deserialize, Deserializer, Serializer, de};
 
+    #[allow(dead_code)]
+    pub fn serialize<S>(v: &bool, s: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        s.serialize_str(if *v { "True" } else { "False" })
+    }
+
+    #[allow(dead_code)]
+    pub fn deserialize<'de, D>(d: D) -> Result<bool, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        // expects "true"/"false"
+        let s = String::deserialize(d)?;
+        match s.as_str() {
+            "True" => Ok(true),
+            "False" => Ok(false),
+            other => Err(de::Error::custom(format!("invalid bool string: {other}"))),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct ControlCommand {
+    #[serde(alias = "Method")] 
+    pub method: String,
+    #[serde(alias = "Body", with = "body_as_base64_string")]
+    pub body: ControlCommandBody,
+}
+
+#[derive(Debug, Clone, Deserialize)]
 pub enum IntensityMode {
     Const,
     Fade,
     FadeInAndOut,
 }
 
+#[derive(Debug, Clone, Deserialize)]
 pub enum ActionType {
     Shake,
     Electrical,
 }
 
-
-#[derive(Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct ControlCommandTrack {
     pub start_time: u16,
     pub end_time: u16,
     pub stop_name: String,
     pub start_intensity: u16,
     pub end_intensity: u16,
-    #[serde(alias = "intensity_mode")]
-    pub intensity_mode_raw: String,
-    #[serde(alias = "action_type")]
-    pub action_type_raw: String,
-    #[serde(alias = "once")]
-    pub once_raw: String,
+    pub intensity_mode: IntensityMode,
+    pub action_type: ActionType,
+    #[serde(with = "bool_as_string")]
+    pub once: bool,
     pub interval: u16,
     pub index: Vec<u8>,
 }
 
-impl ControlCommandTrack {
-    pub fn intensity_mode(&self) -> Result<IntensityMode, Box<dyn std::error::Error + Send + Sync>> {
-        match self.intensity_mode_raw.as_str() {
-            "Const" => Ok(IntensityMode::Const),
-            "Fade" => Ok(IntensityMode::Fade),
-            "FadeInAndOut" => Ok(IntensityMode::FadeInAndOut),
-            _ => Err("Unknown intensity mode".into()),
-        }
-    }
-
-    pub fn action_type(&self) -> Result<ActionType, Box<dyn std::error::Error + Send + Sync>> {
-        match self.action_type_raw.as_str() {
-            "Shake" => Ok(ActionType::Shake),
-            "Electrical" => Ok(ActionType::Electrical),
-            _ => Err("Unknown action type".into()),
-        }
-    }
-
-    pub fn once(&self) -> Result<bool, Box<dyn std::error::Error + Send + Sync>> {
-        match self.once_raw.as_str() {
-            "true" | "True" => Ok(true),
-            "false" | "False" => Ok(false),
-            _ => return Err("Unknown once value".into()),
-        }
-    }
-}
-
-#[derive(Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct ControlCommandBody {
     pub name: String,
     pub uuid: String,
-    #[serde(alias = "keep")] 
-    pub keep_raw: String,
+    #[serde(with = "bool_as_string")]
+    pub keep: bool,
     pub priority: u16,
     pub tracks: Vec<ControlCommandTrack>,
-}
-
-impl ControlCommandBody {
-    pub fn keep(&self) -> Result<bool, Box<dyn std::error::Error + Send + Sync>> {
-        match self.keep_raw.as_str() {
-            "true" | "True" => Ok(true),
-            "false" | "False" => Ok(false),
-            _ => return Err("Unknown keep value".into()),
-        }
-    }
 }

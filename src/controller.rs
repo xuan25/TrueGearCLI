@@ -46,7 +46,7 @@ pub struct TrueGearController {
 
 impl ControlCommand {
     pub fn write_bytes_to<'a>(&mut self, buffer: &'a mut Vec<u8>, electical_effect_ratio: f32) -> Result<&'a Vec<u8>, Box<dyn Error + Send + Sync>> {
-        Ok(self.body()?.write_bytes_to(buffer, electical_effect_ratio)?)
+        Ok(self.body.write_bytes_to(buffer, electical_effect_ratio)?)
     }
 }
 
@@ -60,7 +60,7 @@ impl ControlCommandBody {
         ]);
         
         for track in &self.tracks {
-            track.write_bytes_to(buffer, self.keep()?, self.uuid.clone(), electical_effect_ratio)?;
+            track.write_bytes_to(buffer, self.keep, self.uuid.clone(), electical_effect_ratio)?;
         }
 
         buffer.push(0x16);
@@ -216,9 +216,9 @@ impl ControlCommandTrack {
     }
 
     pub fn write_bytes_to<'a>(&self, buffer: &'a mut Vec<u8>, keep: bool, _uuid: String, electical_effect_ratio: f32) -> Result<(), Box<dyn Error + Send + Sync>> {
-        let action_type = self.action_type()?;
-        let intensity_mode = self.intensity_mode()?;
-        let once = self.once()?;
+        let action_type = self.action_type.clone();
+        let intensity_mode = self.intensity_mode.clone();
+        let once = self.once;
 
         match action_type {
             ActionType::Shake => {
@@ -341,6 +341,8 @@ impl TrueGearController {
         
         let mut buffer: Vec<u8> = Vec::new();
         command.write_bytes_to(&mut buffer, self.electical_effect_ratio)?;
+
+        tracing::debug!("Sending command bytes: {:?}", buffer);
 
         self.true_gear_connection.send_data(&buffer).await
     }
