@@ -44,7 +44,7 @@ fn setup_logging(log_level: Level) {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
 
     let args = Args::parse();
 
@@ -58,11 +58,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let mut true_gear_controller = controller::TrueGearController::new();
     true_gear_controller.set_electical_effect_ratio(args.electical_effect_ratio);
-    true_gear_controller.auto_connect().await?;
+    true_gear_controller.start().await?;
 
     let websocket_server = TureGearWebsocketServer::new(args.listen_addr, true_gear_controller.clone());
+    let websocket_server_clone = websocket_server.clone();
     tokio::spawn(async move {
-        if let Err(e) = websocket_server.run().await {
+        if let Err(e) = websocket_server_clone.run().await {
             tracing::error!("WebSocket server error: {}", e);
         }
     });
@@ -71,7 +72,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     tracing::info!("Ctrl-C received, shutting down.");
 
-    true_gear_controller.disconnect().await?;
+    websocket_server.close().await?;
+    true_gear_controller.close().await?;
 
     Ok(())
 }

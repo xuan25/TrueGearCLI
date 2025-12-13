@@ -331,15 +331,19 @@ impl TrueGearController {
         self.electical_effect_ratio = ratio;
     }
 
-    pub async fn auto_connect(&mut self) -> Result<(), Box<dyn Error>> {
+    pub async fn start(&mut self) -> Result<(), Box<dyn Error + Send + Sync>> {
+        self.true_gear_connection.start().await
+    }
+
+    pub async fn auto_connect(&mut self) -> Result<(), Box<dyn Error + Send + Sync>> {
         self.true_gear_connection.auto_connect().await
     }
 
-    pub async fn disconnect(&mut self) -> Result<(), Box<dyn Error>> {
+    pub async fn close(&mut self) -> Result<(), Box<dyn Error + Send + Sync>> {
         self.true_gear_connection.disconnect().await
     }
 
-    pub async fn send_command(&self, mut command: true_gear_message::Message) -> Result<(), Box<dyn Error + Send + Sync>> {
+    pub async fn send_command(&mut self, mut command: true_gear_message::Message) -> Result<(), Box<dyn Error + Send + Sync>> {
         
         let mut buffer: Vec<u8> = Vec::new();
         command.write_bytes_to(&mut buffer, self.electical_effect_ratio)?;
