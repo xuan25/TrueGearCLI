@@ -4,12 +4,12 @@
   "properties": {
     "Method": {
       "type": "string",
-      "description": "command method, has to be 'play_no_registered'",
+      "description": "Command method, has to be 'play_no_registered'.",
       "enum": [ "play_no_registered" ]
     },
     "Body": {
       "type": "string",
-      "description": "the command body in base64 encoding. see effect.schema.json for details"
+      "description": "The command body in base64 encoding. See effect.schema.json for details."
     }
   }
 }

@@ -1,15 +1,17 @@
-# True Gear BLE protocol
 
-This document describes the BLE protocol used to communicate with True Gear devices. 
+# True Gear BLE Protocol
 
-> WARNING: This document is based on the reverse engineering of the `True Gear ME02` and may not be complete or accurate.
+This document describes the BLE protocol used to communicate with True Gear devices.
 
-The data is sent over BLE in a binary format to control the device. The client need to find the service `SERVICE_UUID_CENTER` and the characteristic `SERVICE_UUID_CENTER_CHARACTERISTICS` of the service to write the data.
+> WARNING: This document is based on reverse engineering of the `True Gear ME02` and may not be complete or accurate.
+
+Data is sent over BLE in a binary format to control the device. The client needs to find the service `SERVICE_UUID_CENTER` and the characteristic `SERVICE_UUID_CENTER_CHARACTERISTICS` of the service to write the data.
 
 ```sh
 SERVICE_UUID_CENTER = "6e400001-b5a3-f393-e0a9-e50e24dcca9e"
 SERVICE_UUID_CENTER_CHARACTERISTICS = "6e400002-b5a3-f393-e0a9-e50e24dcca9e"
 ```
+
 
 The basic unit of communication is the EffectObject, which contains multiple TrackObjects. Each TrackObject defines a specific effect to be applied to the device.
 
@@ -43,13 +45,13 @@ The basic unit of communication is the EffectObject, which contains multiple Tra
 |=========================================================================|
 
 N:
-    number of TrackObjects included in this EffectObject
+    Number of TrackObjects included in this EffectObject
 ```
 
 ```
 action_type = Electrical
 |=========================================================================|
-|                    TrackObject Electical Segment                        |
+|                    TrackObject Electrical Segment                       |
 |=========================================================================|
 |   idx   |   0   |   1   |   2   |   3   |   4   |   5   |   6   |   7   |
 |-------------------------------------------------------------------------|
@@ -82,17 +84,19 @@ action_type = Electrical
 |   0xF   | 0x00                                                          |
 |=========================================================================|
 
+
 intensity_mode values:
     0x10 = (once = true)
     0x11 = Const
     0x12 = Fade / FadeInAndOut
 
+
 group values:
     0xF0 = on
     0x00 = off
 
-Note: under Once mode
-    time_end, interval and intensity_end are set to 0
+Note: Under Once mode:
+    end_time, interval, and end_intensity are set to 0.
 ```
 
 ```
@@ -129,28 +133,32 @@ action_type = Shake
 |   0xF   |                                                               |
 |=========================================================================|
 
+
 intensity_mode values:
     0x01 = Const + not keep
     0x02 = Fade / FadeInAndOut + not keep
     0x03 = Const + keep
     0x04 = Fade / FadeInAndOut + keep
 
+
 register_id:
-    if the effect is not with keep mode, use 0 as id
-    if the effect is with keep mode
-    Note: the usage of register_id on the device-side is not clear yet
+    If the effect is not in keep mode, use 0 as the id.
+    If the effect is in keep mode.
+    Note: The usage of register_id on the device side is not yet clear.
+
 
 dot_group values:
-    each dot group is a short (2 bytes) representing 16 dots maximum
-    each bit in the short represents whether a dot is activated (1) or not (0)
-    the most significant bit (1<<15) represents the first dot in the group (top-left)
-    the dots are enumerated from top-left to bottom-right, y first enumeration
-    for front dots, we view the device from the front side (mirrored from actual positions)
-    for back dots, we view the device from the back side (normal positions)
+    Each dot group is a short (2 bytes) representing up to 16 dots.
+    Each bit in the short represents whether a dot is activated (1) or not (0).
+    The most significant bit (1<<15) represents the first dot in the group (top-left).
+    The dots are enumerated from top-left to bottom-right, y-first enumeration.
+    For front dots, view the device from the front side (mirrored from actual positions).
+    For back dots, view the device from the back side (normal positions).
 
 ```
 
-## Exmples
+
+## Examples
 
 ```
 Connected
