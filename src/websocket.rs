@@ -13,7 +13,7 @@ use tokio_tungstenite::tungstenite::handshake::server::{ErrorResponse, Request, 
 use tokio_tungstenite::tungstenite::protocol::CloseFrame;
 use tokio_tungstenite::{WebSocketStream, tungstenite};
 
-use crate::command::{ControlCommand};
+use crate::true_gear_message::{Message};
 use crate::controller::TrueGearController;
 
 #[derive(Clone)]
@@ -54,7 +54,7 @@ impl TureGearWebsocketServer {
 
             tracing::debug!("Received a raw message from {}: {}", addr, msg);
 
-            let control_command: ControlCommand = serde_json::from_str(&msg)?;
+            let control_command: Message = serde_json::from_str(&msg)?;
 
             tracing::info!("Received a message from {}: {:?}", addr, control_command);
 

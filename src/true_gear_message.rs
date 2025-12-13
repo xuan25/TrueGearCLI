@@ -1,11 +1,10 @@
-use serde::{Deserialize};
+use serde::{Deserialize, Serialize};
 
 mod body_as_base64_string {
     use base64::{engine::general_purpose, Engine as _};
     use serde::de::DeserializeOwned;
     use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 
-    #[allow(dead_code)]
     pub fn serialize<S, T>(value: &T, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -16,7 +15,6 @@ mod body_as_base64_string {
         serializer.serialize_str(&b64)
     }
 
-    #[allow(dead_code)]
     pub fn deserialize<'de, D, T>(deserializer: D) -> Result<T, D::Error>
     where
         D: Deserializer<'de>,
@@ -34,7 +32,6 @@ mod body_as_base64_string {
 mod bool_as_string {
     use serde::{Deserialize, Deserializer, Serializer, de};
 
-    #[allow(dead_code)]
     pub fn serialize<S>(v: &bool, s: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -42,7 +39,6 @@ mod bool_as_string {
         s.serialize_str(if *v { "True" } else { "False" })
     }
 
-    #[allow(dead_code)]
     pub fn deserialize<'de, D>(d: D) -> Result<bool, D::Error>
     where
         D: Deserializer<'de>,
@@ -57,29 +53,26 @@ mod bool_as_string {
     }
 }
 
-#[derive(Debug, Clone, Deserialize)]
-pub struct ControlCommand {
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct Message {
     #[serde(alias = "Method")] 
     pub method: String,
     #[serde(alias = "Body", with = "body_as_base64_string")]
-    pub body: ControlCommandBody,
+    pub body: Effect,
 }
 
-#[derive(Debug, Clone, Deserialize)]
-pub enum IntensityMode {
-    Const,
-    Fade,
-    FadeInAndOut,
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct Effect {
+    pub name: String,
+    pub uuid: String,
+    #[serde(with = "bool_as_string")]
+    pub keep: bool,
+    pub priority: u16,
+    pub tracks: Vec<Track>,
 }
 
-#[derive(Debug, Clone, Deserialize)]
-pub enum ActionType {
-    Shake,
-    Electrical,
-}
-
-#[derive(Debug, Clone, Deserialize)]
-pub struct ControlCommandTrack {
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct Track {
     pub start_time: u16,
     pub end_time: u16,
     pub stop_name: String,
@@ -89,16 +82,19 @@ pub struct ControlCommandTrack {
     pub action_type: ActionType,
     #[serde(with = "bool_as_string")]
     pub once: bool,
-    pub interval: u16,
+    pub interval: u8,
     pub index: Vec<u8>,
 }
 
-#[derive(Debug, Clone, Deserialize)]
-pub struct ControlCommandBody {
-    pub name: String,
-    pub uuid: String,
-    #[serde(with = "bool_as_string")]
-    pub keep: bool,
-    pub priority: u16,
-    pub tracks: Vec<ControlCommandTrack>,
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub enum ActionType {
+    Shake,
+    Electrical,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub enum IntensityMode {
+    Const,
+    Fade,
+    FadeInAndOut,
 }

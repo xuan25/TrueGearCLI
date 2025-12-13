@@ -1,4 +1,4 @@
-use crate::{ble, command::{ActionType, ControlCommand, ControlCommandBody, ControlCommandTrack, IntensityMode}};
+use crate::{ble, true_gear_message};
 use std::{error::Error};
 
 const FRONT_EFFECT_DOT1: [u8; 20] = [
@@ -44,13 +44,13 @@ pub struct TrueGearController {
     electical_effect_ratio: f32,
 }
 
-impl ControlCommand {
+impl true_gear_message::Message {
     pub fn write_bytes_to<'a>(&mut self, buffer: &'a mut Vec<u8>, electical_effect_ratio: f32) -> Result<&'a Vec<u8>, Box<dyn Error + Send + Sync>> {
         Ok(self.body.write_bytes_to(buffer, electical_effect_ratio)?)
     }
 }
 
-impl ControlCommandBody {
+impl true_gear_message::Effect {
     pub fn write_bytes_to<'a>(&self, buffer: &'a mut Vec<u8>, electical_effect_ratio: f32) -> Result<&'a Vec<u8>, Box<dyn Error + Send + Sync>> {
         // Serialize the command body into bytes suitable for BLE transmission
         buffer.extend([
@@ -69,7 +69,7 @@ impl ControlCommandBody {
     }
 }
 
-impl ControlCommandTrack {
+impl true_gear_message::Track {
 
     fn write_track_object_shake<'a>(
         buffer: &'a mut Vec<u8>, 
@@ -223,24 +223,24 @@ impl ControlCommandTrack {
         let once = self.once;
 
         match action_type {
-            ActionType::Shake => {
-                let _ = ControlCommandTrack::write_track_object_shake(
+            true_gear_message::ActionType::Shake => {
+                let _ = true_gear_message::Track::write_track_object_shake(
                     buffer, 
                     match intensity_mode {
-                        IntensityMode::Const => IntensityModeSingleTrack::Const,
-                        IntensityMode::Fade => IntensityModeSingleTrack::Fade,
-                        IntensityMode::FadeInAndOut => IntensityModeSingleTrack::Fade,
+                        true_gear_message::IntensityMode::Const => IntensityModeSingleTrack::Const,
+                        true_gear_message::IntensityMode::Fade => IntensityModeSingleTrack::Fade,
+                        true_gear_message::IntensityMode::FadeInAndOut => IntensityModeSingleTrack::Fade,
                     },
                     0x00,           // TODO: uuid to id mapping
                     keep, 
                     self.start_time, 
                     match intensity_mode {
-                        IntensityMode::FadeInAndOut => (self.start_time + self.end_time) / 2,
+                        true_gear_message::IntensityMode::FadeInAndOut => (self.start_time + self.end_time) / 2,
                         _ => self.end_time,
                     },
                     self.start_intensity, 
                     match intensity_mode {
-                        IntensityMode::Const => self.start_intensity,
+                        true_gear_message::IntensityMode::Const => self.start_intensity,
                         _ => self.end_intensity,
                     }, 
                     &self.index
@@ -248,8 +248,8 @@ impl ControlCommandTrack {
                 buffer[2] += 1;
 
                 match intensity_mode {
-                    IntensityMode::FadeInAndOut => {
-                        let _ = ControlCommandTrack::write_track_object_shake(
+                    true_gear_message::IntensityMode::FadeInAndOut => {
+                        let _ = true_gear_message::Track::write_track_object_shake(
                             buffer, 
                             IntensityModeSingleTrack::Fade,
                             0x00,           // TODO: uuid to id mapping
@@ -264,24 +264,24 @@ impl ControlCommandTrack {
                     _ => {}
                 }
             },
-            ActionType::Electrical => {
-                let _ = ControlCommandTrack::write_track_object_electrical(
+            true_gear_message::ActionType::Electrical => {
+                let _ = true_gear_message::Track::write_track_object_electrical(
                     buffer, 
                     match intensity_mode {
-                        IntensityMode::Const => IntensityModeSingleTrack::Const,
-                        IntensityMode::Fade => IntensityModeSingleTrack::Fade,
-                        IntensityMode::FadeInAndOut => IntensityModeSingleTrack::Fade,
+                        true_gear_message::IntensityMode::Const => IntensityModeSingleTrack::Const,
+                        true_gear_message::IntensityMode::Fade => IntensityModeSingleTrack::Fade,
+                        true_gear_message::IntensityMode::FadeInAndOut => IntensityModeSingleTrack::Fade,
                     },
                     once,
                     self.start_time, 
                     match intensity_mode {
-                        IntensityMode::FadeInAndOut => (self.start_time + self.end_time) / 2,
+                        true_gear_message::IntensityMode::FadeInAndOut => (self.start_time + self.end_time) / 2,
                         _ => self.end_time,
                     },
                     self.interval as u8,
                     self.start_intensity, 
                     match intensity_mode {
-                        IntensityMode::Const => self.start_intensity,
+                        true_gear_message::IntensityMode::Const => self.start_intensity,
                         _ => self.end_intensity,
                     },
                     &self.index,
@@ -290,8 +290,8 @@ impl ControlCommandTrack {
                 buffer[2] += 1;
                 
                 match intensity_mode {
-                    IntensityMode::FadeInAndOut => {
-                        let _ = ControlCommandTrack::write_track_object_electrical(
+                    true_gear_message::IntensityMode::FadeInAndOut => {
+                        let _ = true_gear_message::Track::write_track_object_electrical(
                             buffer, 
                             IntensityModeSingleTrack::Fade,
                             once,
@@ -339,7 +339,7 @@ impl TrueGearController {
         self.true_gear_connection.disconnect().await
     }
 
-    pub async fn send_command(&self, mut command: ControlCommand) -> Result<(), Box<dyn Error + Send + Sync>> {
+    pub async fn send_command(&self, mut command: true_gear_message::Message) -> Result<(), Box<dyn Error + Send + Sync>> {
         
         let mut buffer: Vec<u8> = Vec::new();
         command.write_bytes_to(&mut buffer, self.electical_effect_ratio)?;

@@ -5,7 +5,7 @@ pub mod websocket;
 
 mod controller;
 
-mod command;
+mod true_gear_message;
 
 use crate::websocket::TureGearWebsocketServer;
 
