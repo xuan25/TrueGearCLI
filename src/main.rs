@@ -30,6 +30,19 @@ struct Args {
     verbose: bool,
 }
 
+fn setup_logging(log_level: Level) {
+    let subscriber = FmtSubscriber::builder()
+        // all spans/events with a level higher than TRACE (e.g, debug, info, warn, etc.)
+        // will be written to stdout.
+        .with_max_level(log_level)
+        // completes the builder.
+        .finish();
+
+    tracing::subscriber::set_global_default(subscriber)
+        .expect("setting default subscriber failed");
+    
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
 
@@ -41,15 +54,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         log_level = Level::TRACE;
     }
 
-    let subscriber = FmtSubscriber::builder()
-        // all spans/events with a level higher than TRACE (e.g, debug, info, warn, etc.)
-        // will be written to stdout.
-        .with_max_level(log_level)
-        // completes the builder.
-        .finish();
-
-    tracing::subscriber::set_global_default(subscriber)
-        .expect("setting default subscriber failed");
+    setup_logging(log_level);
 
     let mut true_gear_controller = controller::TrueGearController::new();
     true_gear_controller.set_electical_effect_ratio(args.electical_effect_ratio);
