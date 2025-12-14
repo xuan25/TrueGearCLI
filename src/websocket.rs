@@ -72,7 +72,7 @@ impl TureGearWebsocketServer {
 
                     tracing::info!("Received a message from {}: {:?}", addr, control_message);
 
-                    match self.true_gear_controller.send_command(control_message).await {
+                    match self.true_gear_controller.send_message(control_message).await {
                         Ok(_) => tracing::info!("Command sent successfully"),
                         Err(e) => tracing::error!("Failed to send command: {}", e),
                     }

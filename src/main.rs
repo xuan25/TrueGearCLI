@@ -56,7 +56,7 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
 
     setup_logging(log_level);
 
-    let mut true_gear_controller = controller::TrueGearController::new();
+    let mut true_gear_controller = controller::TrueGearController::build(args.electical_effect_ratio).await;
     true_gear_controller.set_electical_effect_ratio(args.electical_effect_ratio);
     true_gear_controller.start().await?;
 

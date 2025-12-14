@@ -1,5 +1,5 @@
-use crate::{ble, true_gear_message};
-use std::{error::Error};
+use crate::{ble, true_gear_message::{self, Message}};
+use std::{error::Error, vec};
 
 const FRONT_EFFECT_DOT1: [u8; 20] = [
     1, 1, 4, 4, 
@@ -40,7 +40,7 @@ enum IntensityModeSingleTrack {
 
 #[derive(Clone)]
 pub struct TrueGearController {
-    true_gear_connection: ble::TureGearConnection,
+    true_gear_connection: ble::TrueGearConnection,
     electical_effect_ratio: f32,
 }
 
@@ -316,11 +316,138 @@ impl true_gear_message::Track {
 
 impl TrueGearController {
 
-    pub fn new() -> Self {
-        TrueGearController {
-            true_gear_connection: ble::TureGearConnection::new(),
-            electical_effect_ratio: 1.0,
-        }
+    pub async fn build(electical_effect_ratio: f32) -> Self {
+        let true_gear_connection = ble::TrueGearConnection::new();
+        let mut true_gear_connection_clone = true_gear_connection.clone();
+        let instance = TrueGearController {
+            true_gear_connection,
+            electical_effect_ratio,
+        };
+        let controller_clone = instance.clone();
+
+        true_gear_connection_clone.set_on_connected(
+            move || {
+                let mut controller_clone = controller_clone.clone();
+                tokio::spawn(async move {
+                    controller_clone.on_connected().await;
+                });
+            }
+        ).await;
+
+        instance
+    }
+
+    pub async fn on_connected(&mut self)
+    {
+        let mut commands = vec![
+            Message {
+                method: "play_no_registered".into(),
+                body: true_gear_message::Effect {
+                    name: "Connected".into(),
+                    uuid: "Connected".into(),
+                    keep: false,
+                    priority: 0,
+                    tracks: vec![
+                        true_gear_message::Track {
+                            start_time: 0,
+                            end_time: 100,
+                            stop_name: "".into(),
+                            start_intensity: 20,
+                            end_intensity: 20,
+                            intensity_mode: true_gear_message::IntensityMode::Const,
+                            action_type: true_gear_message::ActionType::Shake,
+                            once: false,
+                            interval: 0,
+                            index: vec![
+                                0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+                                10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+                                100, 101, 102, 103, 104, 105, 106, 107, 108, 109,
+                                110, 111, 112, 113, 114, 115, 116, 117, 118, 119,
+                            ],
+                        },
+                    ],
+                },
+            },
+            Message {
+                method: "play_no_registered".into(),
+                body: true_gear_message::Effect {
+                    name: "Connected".into(),
+                    uuid: "Connected".into(),
+                    keep: false,
+                    priority: 0,
+                    tracks: vec![
+                        true_gear_message::Track {
+                            start_time: 0,
+                            end_time: 0,
+                            stop_name: "".into(),
+                            start_intensity: 30,
+                            end_intensity: 0,
+                            intensity_mode: true_gear_message::IntensityMode::Fade,
+                            action_type: true_gear_message::ActionType::Electrical,
+                            once: true,
+                            interval: 0,
+                            index: vec![
+                                0, 100
+                            ],
+                        },
+                    ],
+                },
+            },
+            Message {
+                method: "play_no_registered".into(),
+                body: true_gear_message::Effect {
+                    name: "Connected".into(),
+                    uuid: "Connected".into(),
+                    keep: false,
+                    priority: 0,
+                    tracks: vec![
+                        true_gear_message::Track {
+                            start_time: 0,
+                            end_time: 100,
+                            stop_name: "".into(),
+                            start_intensity: 20,
+                            end_intensity: 20,
+                            intensity_mode: true_gear_message::IntensityMode::Const,
+                            action_type: true_gear_message::ActionType::Shake,
+                            once: false,
+                            interval: 0,
+                            index: vec![
+                                0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+                                10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+                                100, 101, 102, 103, 104, 105, 106, 107, 108, 109,
+                                110, 111, 112, 113, 114, 115, 116, 117, 118, 119,
+                            ],
+                        },
+                    ],
+                },
+            },
+            Message {
+                method: "play_no_registered".into(),
+                body: true_gear_message::Effect {
+                    name: "Connected".into(),
+                    uuid: "Connected".into(),
+                    keep: false,
+                    priority: 0,
+                    tracks: vec![
+                        true_gear_message::Track {
+                            start_time: 0,
+                            end_time: 0,
+                            stop_name: "".into(),
+                            start_intensity: 30,
+                            end_intensity: 0,
+                            intensity_mode: true_gear_message::IntensityMode::Fade,
+                            action_type: true_gear_message::ActionType::Electrical,
+                            once: true,
+                            interval: 0,
+                            index: vec![
+                                0, 100
+                            ],
+                        },
+                    ],
+                },
+            },
+        ];
+        let _ = self.send_messages(&mut commands).await;
     }
 
     pub fn electical_effect_ratio(&self) -> f32 {
@@ -343,12 +470,27 @@ impl TrueGearController {
         self.true_gear_connection.disconnect().await
     }
 
-    pub async fn send_command(&mut self, mut command: true_gear_message::Message) -> Result<(), Box<dyn Error + Send + Sync>> {
-        
+    pub async fn send_messages(&mut self, commands: &mut [true_gear_message::Message]) -> Result<(), Box<dyn Error + Send + Sync>> {
+
+        let mut buffer: Vec<u8> = Vec::new();
+
+        for command in &mut commands.iter_mut() {
+            let mut buffer_effect: Vec<u8> = Vec::new();
+            command.write_bytes_to(&mut buffer_effect, self.electical_effect_ratio)?;
+            buffer.extend(buffer_effect);
+        }
+
+        tracing::debug!("Sending command bytes ({}): {:02X?}", buffer.len(), buffer);
+
+        self.true_gear_connection.send_data(&buffer).await
+    }
+
+    pub async fn send_message(&mut self, mut command: true_gear_message::Message) -> Result<(), Box<dyn Error + Send + Sync>> {
+
         let mut buffer: Vec<u8> = Vec::new();
         command.write_bytes_to(&mut buffer, self.electical_effect_ratio)?;
 
-        tracing::debug!("Sending command bytes: {:02X?}", buffer);
+        tracing::debug!("Sending command bytes ({}): {:02X?}", buffer.len(), buffer);
 
         self.true_gear_connection.send_data(&buffer).await
     }

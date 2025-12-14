@@ -10,20 +10,30 @@ const SERVICE_UUID_CENTER: Uuid = uuid!("6e400001-b5a3-f393-e0a9-e50e24dcca9e");
 const SERVICE_UUID_CENTER_CHARACTERISTICS: Uuid = uuid!("6e400002-b5a3-f393-e0a9-e50e24dcca9e");
 
 #[derive(Clone)]
-pub struct TureGearConnection {
+pub struct TrueGearConnection {
     peripheral: Arc<Mutex<Option<Peripheral>>>,
     write_char: Arc<Mutex<Option<btleplug::api::Characteristic>>>,
     searching: Arc<Mutex<bool>>,
+    on_connected: Arc<Mutex<Option<Box<dyn Fn() + Send + Sync>>>>,
 }
 
-impl TureGearConnection {
+impl TrueGearConnection {
 
     pub fn new() -> Self {
-        TureGearConnection {
+        TrueGearConnection {
             peripheral: Arc::new(Mutex::new(None)),
             write_char: Arc::new(Mutex::new(None)),
             searching: Arc::new(Mutex::new(false)),
+            on_connected: Arc::new(Mutex::new(None)),
         }
+    }
+
+    pub async fn set_on_connected<F>(&mut self, callback: F) 
+    where
+        F: Fn() + Send + Sync + 'static,
+    {
+        let mut on_connected_guard = self.on_connected.lock().await;
+        *on_connected_guard = Some(Box::new(callback));
     }
 
     pub async fn start(&mut self) -> Result<(), Box<dyn Error + Send + Sync>> {
@@ -57,6 +67,10 @@ impl TureGearConnection {
         tokio::spawn(async move {
             let _ = self_clone.auto_connect().await;
             *self_clone.searching.lock().await = false;
+
+            if let Some(callback) = &*self_clone.on_connected.lock().await {
+                callback();
+            }
         });
         return Err("Not connected to device".into());
 
