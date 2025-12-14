@@ -70,10 +70,10 @@ impl TureGearWebsocketServer {
                         continue;
                     };
 
-                    tracing::info!("Received a message from {}: {:?}", addr, control_message);
+                    tracing::debug!("Received a message from {}: {:?}", addr, control_message);
 
                     match self.true_gear_controller.send_message(control_message).await {
-                        Ok(_) => tracing::info!("Command sent successfully"),
+                        Ok(_) => tracing::debug!("Command sent successfully"),
                         Err(e) => tracing::error!("Failed to send command: {}", e),
                     }
                 }
@@ -108,13 +108,13 @@ impl TureGearWebsocketServer {
     }
 
     async fn handle_connection(self, raw_stream: TcpStream, addr: SocketAddr) -> Result<(), Box<dyn std::error::Error + Send + Sync>>  {
-        tracing::info!("Incoming TCP connection from: {}", addr);
+        tracing::debug!("Incoming TCP connection from: {}", addr);
 
         let (ws_stream_result, path) = TureGearWebsocketServer::accept_async_with_path(raw_stream)
             .await;
         let mut ws_stream = ws_stream_result.expect("Error during the websocket handshake occurred");
 
-        tracing::info!("WebSocket connection established: {}", addr);
+        tracing::debug!("WebSocket connection established: {}", addr);
 
         match path.as_deref() {
             Some("/v1/tact/") => {
@@ -147,7 +147,7 @@ impl TureGearWebsocketServer {
         // Create the event loop and TCP listener we'll accept connections on.
         let try_socket = TcpListener::bind(&self.addr).await;
         let listener = try_socket.expect("Failed to bind");
-        tracing::info!("Listening on: {}", self.addr);
+        tracing::info!("Listening WebSocket on: {}", self.addr);
 
         // Let's spawn the handling of each connection in a separate task.
         while let Ok((stream, addr)) = listener.accept().await {
