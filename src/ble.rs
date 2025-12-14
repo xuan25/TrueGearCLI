@@ -120,7 +120,6 @@ impl TrueGearConnection {
                         for _ in 0..3 {
                             match self.connect_peripheral(peripheral.clone()).await {
                                 Ok(_) => {
-                                    central.stop_scan().await?;
                                     tracing::info!("Successfully connected to peripheral: {:?}", name);
                                     is_connected = true;
                                     break;
@@ -140,6 +139,8 @@ impl TrueGearConnection {
                 _ => {}
             }
         }
+
+        central.stop_scan().await?;
 
         Ok(())
 
