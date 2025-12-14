@@ -556,7 +556,7 @@ impl TrueGearController {
                         // Shake object
                         // Skip the rest of the shake object data
                         tracing::debug!("Skip parsing shake object data");
-                        for _ in 0..16 {
+                        for _ in 0..(16 - 1) {
                             let _ = iter.next();
                         }
                     }
@@ -564,7 +564,7 @@ impl TrueGearController {
                         // Electrical object
                         // Skip the rest of the electrical object data
                         tracing::debug!("Skip parsing electrical object data");
-                        for _ in 0..16 {
+                        for _ in 0..(16 - 1) {
                             let _ = iter.next();
                         }
                     }
