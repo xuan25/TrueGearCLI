@@ -11,7 +11,7 @@ const SERVICE_UUID_CENTER_WRITE_CHARACTERISTICS: Uuid = uuid!("6e400002-b5a3-f39
 const SERVICE_UUID_CENTER_NOTIFY_CHARACTERISTICS: Uuid = uuid!("6e400003-b5a3-f393-e0a9-e50e24dcca9e");
 
 #[derive(Clone)]
-pub struct TrueGearConnection {
+pub struct TrueGearBLEConnection {
     peripheral: Arc<Mutex<Option<Peripheral>>>,
     write_char: Arc<Mutex<Option<btleplug::api::Characteristic>>>,
     searching: Arc<Mutex<bool>>,
@@ -19,10 +19,10 @@ pub struct TrueGearConnection {
     on_message_received: Arc<Mutex<Option<Box<dyn Fn(&[u8]) + Send + Sync>>>>,
 }
 
-impl TrueGearConnection {
+impl TrueGearBLEConnection {
 
     pub fn new() -> Self {
-        TrueGearConnection {
+        TrueGearBLEConnection {
             peripheral: Arc::new(Mutex::new(None)),
             write_char: Arc::new(Mutex::new(None)),
             searching: Arc::new(Mutex::new(false)),

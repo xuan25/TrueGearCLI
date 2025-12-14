@@ -17,18 +17,18 @@ use tokio_tungstenite::tungstenite::handshake::server::{ErrorResponse, Request, 
 use tokio_tungstenite::tungstenite::protocol::CloseFrame;
 use tokio_tungstenite::{WebSocketStream, tungstenite};
 
-use crate::controller::TrueGearController;
+use crate::controller::TrueGearBLEController;
 
 #[derive(Clone)]
 pub struct TureGearWebsocketServer {
     addr: String,
-    true_gear_controller: TrueGearController,
+    true_gear_controller: TrueGearBLEController,
     connections_outgoings: Arc<Mutex<Vec<SplitSink<WebSocketStream<TcpStream>, tokio_tungstenite::tungstenite::Message>>>>,
 }
 
 impl TureGearWebsocketServer {
 
-    pub fn new(addr: String, true_gear_controller: TrueGearController) -> Self {
+    pub fn new(addr: String, true_gear_controller: TrueGearBLEController) -> Self {
         TureGearWebsocketServer {
             addr,
             true_gear_controller,
@@ -72,7 +72,7 @@ impl TureGearWebsocketServer {
 
                     tracing::debug!("Received a message from {}: {:?}", addr, control_message);
 
-                    match self.true_gear_controller.send_message(control_message).await {
+                    match self.true_gear_controller.send_ble_message(control_message).await {
                         Ok(_) => tracing::debug!("Command sent successfully"),
                         Err(e) => tracing::error!("Failed to send command: {}", e),
                     }

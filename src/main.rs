@@ -7,6 +7,12 @@ mod controller;
 
 mod true_gear_message;
 
+mod predefined;
+
+mod ble_notify_parser;
+
+mod ble_message_ext;
+
 use crate::websocket::TureGearWebsocketServer;
 
 use clap::{Parser};
@@ -56,7 +62,7 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
 
     setup_logging(log_level);
 
-    let mut true_gear_controller = controller::TrueGearController::build(args.electical_effect_ratio).await;
+    let mut true_gear_controller = controller::TrueGearBLEController::build(args.electical_effect_ratio).await;
     true_gear_controller.set_electical_effect_ratio(args.electical_effect_ratio);
     true_gear_controller.start().await?;
 
