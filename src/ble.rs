@@ -7,7 +7,8 @@ use std::sync::Arc;
 use uuid::{Uuid, uuid};
 
 const SERVICE_UUID_CENTER: Uuid = uuid!("6e400001-b5a3-f393-e0a9-e50e24dcca9e");
-const SERVICE_UUID_CENTER_CHARACTERISTICS: Uuid = uuid!("6e400002-b5a3-f393-e0a9-e50e24dcca9e");
+const SERVICE_UUID_CENTER_WRITE_CHARACTERISTICS: Uuid = uuid!("6e400002-b5a3-f393-e0a9-e50e24dcca9e");
+const SERVICE_UUID_CENTER_NOTIFY_CHARACTERISTICS: Uuid = uuid!("6e400003-b5a3-f393-e0a9-e50e24dcca9e");
 
 #[derive(Clone)]
 pub struct TrueGearConnection {
@@ -15,6 +16,7 @@ pub struct TrueGearConnection {
     write_char: Arc<Mutex<Option<btleplug::api::Characteristic>>>,
     searching: Arc<Mutex<bool>>,
     on_connected: Arc<Mutex<Option<Box<dyn Fn() + Send + Sync>>>>,
+    on_message_received: Arc<Mutex<Option<Box<dyn Fn(&[u8]) + Send + Sync>>>>,
 }
 
 impl TrueGearConnection {
@@ -25,6 +27,7 @@ impl TrueGearConnection {
             write_char: Arc::new(Mutex::new(None)),
             searching: Arc::new(Mutex::new(false)),
             on_connected: Arc::new(Mutex::new(None)),
+            on_message_received: Arc::new(Mutex::new(None)),
         }
     }
 
@@ -34,6 +37,14 @@ impl TrueGearConnection {
     {
         let mut on_connected_guard = self.on_connected.lock().await;
         *on_connected_guard = Some(Box::new(callback));
+    }
+
+    pub async fn set_on_message_received<F>(&mut self, callback: F) 
+    where
+        F: Fn(&[u8]) + Send + Sync + 'static,
+    {
+        let mut on_message_received_guard = self.on_message_received.lock().await;
+        *on_message_received_guard = Some(Box::new(callback));
     }
 
     pub async fn start(&mut self) -> Result<(), Box<dyn Error + Send + Sync>> {
@@ -127,10 +138,17 @@ impl TrueGearConnection {
                                 Err(e) => {
                                     tracing::error!("Error during connection: {}", e);
                                 }
-                                
                             }
                         }
                         if is_connected {
+
+                            // start notify receiving loop
+                            let self_clone = self.clone();
+
+                            tokio::spawn(async move {
+                                let _ = self_clone.notify_loop(peripheral.clone()).await;
+                            });
+
                             break;
                         }
                         
@@ -162,17 +180,30 @@ impl TrueGearConnection {
             return Err(format!("Failed to find the target BLE service {:?}", SERVICE_UUID_CENTER).into());
         };
 
-        let Some(target_characteristic) = target_service.characteristics.iter().find(|c| {
-            c.uuid == SERVICE_UUID_CENTER_CHARACTERISTICS
+        let Some(write_characteristic) = target_service.characteristics.iter().find(|c| {
+            c.uuid == SERVICE_UUID_CENTER_WRITE_CHARACTERISTICS
         }) else {
             peripheral.disconnect().await?;
-            return Err(format!("Failed to find the target BLE characteristic {:?}", SERVICE_UUID_CENTER_CHARACTERISTICS).into());
+            return Err(format!("Failed to find the target BLE characteristic {:?}", SERVICE_UUID_CENTER_WRITE_CHARACTERISTICS).into());
         };
 
-        let write_char = target_characteristic.clone();
+        let Some(notify_characteristic) = target_service.characteristics.iter().find(|c| {
+            c.uuid == SERVICE_UUID_CENTER_NOTIFY_CHARACTERISTICS
+        }) else {
+            peripheral.disconnect().await?;
+            return Err(format!("Failed to find the target BLE characteristic {:?}", SERVICE_UUID_CENTER_NOTIFY_CHARACTERISTICS).into());
+        };
+
+        // subscribe to notifications
+        peripheral.subscribe(&notify_characteristic).await?;
+
+        let write_characteristic_clone = write_characteristic.clone();
+        let notify_characteristic_clone = notify_characteristic.clone();
+
+        peripheral.subscribe(&notify_characteristic_clone).await?;
 
         *self.peripheral.lock().await = Some(peripheral);
-        *self.write_char.lock().await = Some(write_char);
+        *self.write_char.lock().await = Some(write_characteristic_clone);
 
         Ok(())
     }
@@ -195,6 +226,24 @@ impl TrueGearConnection {
         } else {
             Err("Not connected to BLE device".into())
         }
+    }
+
+    async fn notify_loop(&self, peripheral: Peripheral) -> Result<(), Box<dyn Error + Send + Sync>> {
+        loop {
+            if let Some(data) = peripheral.notifications().await?.next().await {
+                tracing::debug!("Received notification on characteristic {}: {:02X?}", data.uuid, data.value);
+                if data.uuid == SERVICE_UUID_CENTER_NOTIFY_CHARACTERISTICS {
+                    if let Some(callback) = &*self.on_message_received.lock().await {
+                        callback(&data.value);
+                    }
+                }
+
+            } else {
+                tracing::debug!("Notification stream ended");
+                break;
+            }
+        }
+        Ok(())
     }
 
 }

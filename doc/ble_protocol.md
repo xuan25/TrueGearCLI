@@ -1,4 +1,3 @@
-
 # True Gear BLE Protocol
 
 This document describes the BLE protocol used to communicate with True Gear devices.
@@ -12,6 +11,8 @@ SERVICE_UUID_CENTER = "6e400001-b5a3-f393-e0a9-e50e24dcca9e"
 SERVICE_UUID_CENTER_CHARACTERISTICS = "6e400002-b5a3-f393-e0a9-e50e24dcca9e"
 ```
 
+
+## Controling Messages
 
 The basic unit of communication is the EffectObject, which contains multiple TrackObjects. Each TrackObject defines a specific effect to be applied to the device.
 
@@ -158,7 +159,7 @@ dot_group values:
 ```
 
 
-## Examples
+### Examples
 
 ```
 Connected
@@ -188,4 +189,63 @@ Electrical Stimulation Intensity; High-Intensity Testing; 150%
 
 Electrical Stimulation Intensity; Low-Intensity Testing; 150%
 686801100000000000000000960000f000f00016
+```
+
+
+## Battery Level
+
+
+|=========================================================================|
+|                               Batt Segment                              |
+|=========================================================================|
+|   idx   |   0   |   1   |   2   |   3   |   4   |   5   |   6   |   7   |
+|-------------------------------------------------------------------------|
+|   0x0   | 0x81                                                          |
+|-------------------------------------------------------------------------|
+|   0x1   | 0x020304 (big endian)                                         |
+|   0x2   |                                                               |
+|   0x3   |                                                               |
+|-------------------------------------------------------------------------|
+|   0x4   | mid model number (big endian)                                 |
+|   0x5   |                                                               |
+|-------------------------------------------------------------------------|
+|   0x6   | mid battery level (big endian)                                |
+|   0x7   |                                                               |
+|-------------------------------------------------------------------------|
+|   0x8   | left model number (big endian)                                |
+|   0x9   |                                                               |
+|-------------------------------------------------------------------------|
+|   0xA   | left battery level (big endian)                               |
+|   0xB   |                                                               |
+|-------------------------------------------------------------------------|
+|   0xC   | right model number  (big endian)                              |
+|   0xD   |                                                               |
+|-------------------------------------------------------------------------|
+|   0xE   | right battery level (big endian)                              |
+|   0xF   |                                                               |
+|=========================================================================|
+
+battery level range from 0x0000 to 0x1388 (5000 in decimal)
+
+
+### Examples
+
+```
+Main 75%. Left 50%. Right 50%.
+6868018102030402070e7b01050e1901050e1616
+
+Main 75%. Left N/A. Right N/A.
+6868018102030402070e7b010500000105000016
+
+Main 50%. Left 50%. Right 50%.
+6868018102030402070e6501050e0c01050e0b16
+
+Main 50%. Left N/A. Right 50%.
+6868018102030402070e630105000001050e0316
+
+Main 50%. Left 50%. Right N/A.
+6868018102030402070e6301050e020105000016
+
+Main 50%. Left 50%. Right CHG.
+6868018102030402070e1601050dfc0105000016
 ```
