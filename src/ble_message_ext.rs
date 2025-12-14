@@ -2,43 +2,10 @@ use std::error::Error;
 
 use crate::true_gear_message;
 
-const FRONT_EFFECT_DOT1: [u8; 20] = [
-    1, 1, 4, 4, 
-    1, 1, 4, 4, 
-    1, 1, 4, 4, 
-    1, 1, 4, 4, 
-    1, 1, 4, 4
-];
-
-const FRONT_EFFECT_DOT2: [u16; 20] = [
-    1 << 15, 1 << 10, 1 << 15, 1 << 10,
-    1 << 14, 1 << 9,  1 << 14, 1 << 9,
-    1 << 13, 1 << 8,  1 << 13, 1 << 8,
-    1 << 12, 1 << 7,  1 << 12, 1 << 7,
-    1 << 11, 1 << 6,  1 << 11, 1 << 6,
-];
-
-const BACK_EFFECT_DOT1: [u8; 20] = [
-    2, 2, 3, 3, 
-    2, 2, 3, 3, 
-    2, 2, 3, 3, 
-    2, 2, 3, 3, 
-    2, 2, 3, 3
-];
-
-const BACK_EFFECT_DOT2: [u16; 20] = [
-    1 << 15, 1 << 10, 1 << 15, 1 << 10,
-    1 << 14, 1 << 9,  1 << 14, 1 << 9,
-    1 << 13, 1 << 8,  1 << 13, 1 << 8,
-    1 << 12, 1 << 7,  1 << 12, 1 << 7,
-    1 << 11, 1 << 6,  1 << 11, 1 << 6
-];
-
 enum IntensityModeSingleTrack {
     Const,
     Fade,
 }
-
 
 impl true_gear_message::Message {
     pub fn write_ble_bytes_to<'a>(&self, buffer: &'a mut Vec<u8>, electical_effect_ratio: f32) -> Result<&'a Vec<u8>, Box<dyn Error + Send + Sync>> {
@@ -104,49 +71,22 @@ impl true_gear_message::Track {
             (intensity_end & 0xFF) as u8,
         ]);
 
-        let mut dot_group_front_left: u16 = 0;
-        let mut dot_group_back_left: u16 = 0;
-        let mut dot_group_back_right: u16 = 0;
-        let mut dot_group_front_right: u16 = 0;
+        let mut flag_buffer = [0u8; 8];
 
         for &i in index {
-            // if index < 100, it's a front dot 
-            if i < 100 {
-                let b_usize = i as usize;
-                let group = FRONT_EFFECT_DOT1[b_usize];
-                let idx2hex = FRONT_EFFECT_DOT2[b_usize];
-                if group == 1 {
-                    dot_group_front_left |= idx2hex;
-                }
-                if group == 4 {
-                    dot_group_front_right |= idx2hex;
-                }
-            // if index >= 100, it's a back dot
-            } else {
-                let b_usize = (i - 100) as usize;
-                let groupx = BACK_EFFECT_DOT1[b_usize];
-                let idx2hexx = BACK_EFFECT_DOT2[b_usize];
-                if groupx == 2 {
-                    dot_group_back_left |= idx2hexx;
-                }
-                if groupx == 3 {
-                    dot_group_back_right |= idx2hexx;
-                }
+            if let Some(&shift) = crate::predefined::shake_flag_shift_map().get(&i) {
+                let byte_index = (8 - 1 - (shift / 8)) as usize;   // big endian
+                let bit_index = (shift % 8) as usize;
+                flag_buffer[byte_index] |= 1 << bit_index;
             }
         }
 
-        tracing::debug!("Dot Groups - FL: {:016b}, BL: {:016b}, BR: {:016b}, FR: {:016b}", dot_group_front_left, dot_group_back_left, dot_group_back_right, dot_group_front_right);
+        tracing::debug!("Shake Flags: {:08b}{:08b} {:08b}{:08b} {:08b}{:08b} {:08b}{:08b}", 
+            flag_buffer[0], flag_buffer[1], flag_buffer[2], flag_buffer[3],
+            flag_buffer[4], flag_buffer[5], flag_buffer[6], flag_buffer[7],
+        );
 
-        buffer.extend([
-            ((dot_group_front_left >> 8) & 0xFF) as u8,
-            (dot_group_front_left & 0xFF) as u8,
-            ((dot_group_back_left >> 8) & 0xFF) as u8,
-            (dot_group_back_left & 0xFF) as u8,
-            ((dot_group_back_right >> 8) & 0xFF) as u8,
-            (dot_group_back_right & 0xFF) as u8,
-            ((dot_group_front_right >> 8) & 0xFF) as u8,
-            (dot_group_front_right & 0xFF) as u8,
-        ]);
+        buffer.extend(&flag_buffer);
 
         Ok(())
     }
@@ -192,23 +132,23 @@ impl true_gear_message::Track {
             (intensity_end & 0xFF) as u8,
         ]);
 
-        let mut left_index: u8 = 0;
-        let mut right_index: u8 = 0;
+        let mut flag_buffer = [0u8; 4];
 
         for &i in index {
-            if i < 100 {
-                left_index |= 0xF0;
-            } else {
-                right_index |= 0xF0;
+            if let Some(&shifts) = crate::predefined::electrical_flag_shift_map().get(&i) {
+                for &shift in shifts.iter() {
+                    let byte_index = (4 - 1 - (shift / 8)) as usize;   // big endian
+                    let bit_index = (shift % 8) as usize;
+                    flag_buffer[byte_index] |= 1 << bit_index;
+                }
             }
         }
 
-        buffer.extend([
-            left_index,
-            0x00,
-            right_index,
-            0x00,
-        ]);
+        tracing::debug!("Electrical Flags: {:08b}{:08b} {:08b}{:08b}", 
+            flag_buffer[0], flag_buffer[1], flag_buffer[2], flag_buffer[3],
+        );
+
+        buffer.extend(&flag_buffer);
 
         Ok(())
     }
