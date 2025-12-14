@@ -4,15 +4,10 @@ This document describes the BLE protocol used to communicate with True Gear devi
 
 > WARNING: This document is based on reverse engineering of the `True Gear ME02` and may not be complete or accurate.
 
-Data is sent over BLE in a binary format to control the device. The client needs to find the service `SERVICE_UUID_CENTER` and the characteristic `SERVICE_UUID_CENTER_CHARACTERISTICS` of the service to write the data.
-
-```sh
-SERVICE_UUID_CENTER = "6e400001-b5a3-f393-e0a9-e50e24dcca9e"
-SERVICE_UUID_CENTER_CHARACTERISTICS = "6e400002-b5a3-f393-e0a9-e50e24dcca9e"
-```
+Data is sent over BLE in a binary format to control the device. The client needs to find the service `6e400001-b5a3-f393-e0a9-e50e24dcca9e`. The characteristic `6e400002-b5a3-f393-e0a9-e50e24dcca9e` of the service is used to write data of EffectObjects. The characteristic `6e400003-b5a3-f393-e0a9-e50e24dcca9e` is used to receive notifications from the device for device status.
 
 
-## Controling Messages
+## Controlling Messages
 
 The basic unit of communication is the EffectObject, which contains multiple TrackObjects. Each TrackObject defines a specific effect to be applied to the device.
 
@@ -91,6 +86,8 @@ intensity_mode values:
     0x11 = Const
     0x12 = Fade / FadeInAndOut
 
+group_left and group_right
+    view from the front side of the device (mirrored from First-person POV)
 
 group values:
     0xF0 = on
@@ -153,8 +150,8 @@ dot_group values:
     Each bit in the short represents whether a dot is activated (1) or not (0).
     The most significant bit (1<<15) represents the first dot in the group (top-left).
     The dots are enumerated from top-left to bottom-right, y-first enumeration.
-    For front dots, view the device from the front side (mirrored from actual positions).
-    For back dots, view the device from the back side (normal positions).
+    For front dots, view the device from the front side (mirrored from First-person POV).
+    For back dots, view the device from the back side (First-person POV).
 
 ```
 
@@ -192,7 +189,7 @@ Electrical Stimulation Intensity; Low-Intensity Testing; 150%
 ```
 
 
-## Battery Level
+## Device Status Notifications
 
 
 |=========================================================================|
