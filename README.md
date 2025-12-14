@@ -54,7 +54,3 @@ Options:
   -V, --version
           Print version
 ```
-
-## TODO
-
-- Battery level fetching
