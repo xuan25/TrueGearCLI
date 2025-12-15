@@ -1,8 +1,10 @@
 # TrueGear-CLI
 
+[English](README.md) | [简体中文](README_zh.md)
+
 TrueGear-CLI is a third-party command-line interface tool for communicating with TrueGear devices via Bluetooth Low Energy (BLE).
 
-It is capable of accepting and forwarding incoming commands via WebSocket protocols.
+It is capable of accepting and forwarding incoming messages via WebSocket protocols.
 
 ## Quick Start
 
@@ -45,8 +47,8 @@ Usage: truegear-cli [OPTIONS]
 Options:
   -l, --listen-addr <LISTEN_ADDR>
           Address to listen on for WebSocket connections [default: 127.0.0.1:18233]
-  -e, --electical-effect-ratio <ELECTICAL_EFFECT_RATIO>
-          Electrical effect ratio (0.0 to 1.0) [default: 1]
+  -e, --electical-effect-factor <ELECTICAL_EFFECT_FACTOR>
+          Strength factor of the Electical effect (usually between 0.0 to 1.5) [default: 1]
   -v, --verbose
           Enable verbose logging
   -h, --help

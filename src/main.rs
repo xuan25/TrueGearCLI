@@ -27,9 +27,9 @@ struct Args {
     #[arg(short, long, default_value_t = String::from("127.0.0.1:18233"), help = "Address to listen on for WebSocket connections")]
     listen_addr: String,
 
-    // Electical effect ratio
-    #[arg(short, long, default_value_t = 1 as f32, help = "Electical effect ratio (0.0 to 1.0)")]
-    electical_effect_ratio: f32,
+    // Strength factor of the Electical effect 
+    #[arg(short, long, default_value_t = 1 as f32, help = "Strength factor of the Electical effect (usually between 0.0 to 1.5)")]
+    electical_effect_factor: f32,
 
     // show debug logs
     #[arg(short, long, default_value_t = false, help = "Enable verbose logging")]
@@ -62,8 +62,8 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
 
     setup_logging(log_level);
 
-    let mut true_gear_controller = controller::TrueGearBLEController::build(args.electical_effect_ratio).await;
-    true_gear_controller.set_electical_effect_ratio(args.electical_effect_ratio);
+    let mut true_gear_controller = controller::TrueGearBLEController::build(args.electical_effect_factor).await;
+    true_gear_controller.set_electical_effect_ratio(args.electical_effect_factor);
     true_gear_controller.start().await?;
 
     let websocket_server = TureGearWebsocketServer::new(args.listen_addr, true_gear_controller.clone());
