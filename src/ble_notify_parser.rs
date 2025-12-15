@@ -5,15 +5,20 @@ pub struct BleNotifyParser {
     
 }
 
-const BATTARY_FULL: f32 = 5000.0;
+const BATTARY_FULL: f32 = 4200 as f32;
+const BATTARY_EMPTY: f32 = 3400 as f32;
+// Steepness factor
+const K: f32 = 12.0;
+// Midpoint adjustment
+const M: f32 = 0.5;
 
 struct DeviceStatus {
     main_model: u16,
-    main_battery: f32,
+    main_battery_mv: u16,
     left_model: u16,
-    left_battery: f32,
+    left_battery_mv: u16,
     right_model: u16,
-    right_battery: f32,
+    right_battery_mv: u16,
 }
 
 impl BleNotifyParser {
@@ -69,6 +74,20 @@ impl BleNotifyParser {
         Ok(())
     }
 
+    fn parse_battery_level(&self, raw_level_mv: u16) -> f32 {
+        if raw_level_mv == 0 {
+            return 0.0;
+        }
+
+        let ratio = (raw_level_mv as f32 - BATTARY_EMPTY) / (BATTARY_FULL - BATTARY_EMPTY);
+        let clamped_ratio = ratio.clamp(0.0, 1.0);
+
+        // Logistic curve adjustment
+        let adjusted_ratio = 1.0 / (1.0 + (-K * (clamped_ratio - M)).exp());
+
+        adjusted_ratio
+    }
+
     fn parse_notify_object(&self, iter: &mut std::slice::Iter<'_, u8>) -> Result<(), Box<dyn Error + Send + Sync>> {
         match iter.next() {
             Some(&obj_type) => {
@@ -95,10 +114,10 @@ impl BleNotifyParser {
                         tracing::debug!("Parsing device status object");
                         match self.parse_device_status_notify_object(iter) {
                             Ok(device_status) => {
-                                tracing::info!("Device Status - Main {} ({:.2}%), Left {} ({:.2}%), Right {} ({:.2}%)",
-                                    device_status.main_model, device_status.main_battery, 
-                                    device_status.left_model, device_status.left_battery, 
-                                    device_status.right_model, device_status.right_battery);
+                                tracing::info!("Device Status - Main {}: {:.0}% ({} mV), Left {}: {:.0}% ({} mV), Right {}: {:.0}% ({} mV)",
+                                    device_status.main_model, self.parse_battery_level(device_status.main_battery_mv) * 100.0, device_status.main_battery_mv, 
+                                    device_status.left_model, self.parse_battery_level(device_status.left_battery_mv) * 100.0, device_status.left_battery_mv, 
+                                    device_status.right_model, self.parse_battery_level(device_status.right_battery_mv) * 100.0, device_status.right_battery_mv);
                             }
                             Err(e) => {
                                 tracing::error!("Failed to parse device status object: {}", e);
@@ -160,21 +179,21 @@ impl BleNotifyParser {
         ])?;
 
         let main_model = read_u16(iter)?;
-        let main_battery = read_u16(iter)? as f32 / BATTARY_FULL * 100.0;
+        let main_battery_mv = read_u16(iter)?;
 
         let left_model = read_u16(iter)?;
-        let left_battery = read_u16(iter)? as f32 / BATTARY_FULL * 100.0;
+        let left_battery_mv = read_u16(iter)?;
 
         let right_model = read_u16(iter)?;
-        let right_battery = read_u16(iter)? as f32 / BATTARY_FULL * 100.0;
+        let right_battery_mv = read_u16(iter)?;
 
         Ok(DeviceStatus {
             main_model,
-            main_battery,
+            main_battery_mv,
             left_model,
-            left_battery,
+            left_battery_mv,
             right_model,
-            right_battery,
+            right_battery_mv,
         })
     }
 
