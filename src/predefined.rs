@@ -1,14 +1,12 @@
-use std::{collections::HashMap, sync::OnceLock};
-
 use crate::true_gear_message::{ActionType, Effect, IntensityMode, Message, Track};
+use std::{collections::HashMap, sync::OnceLock};
 
 static SHAKE_FLAG_SHIFT_MAP: OnceLock<HashMap<u8, u8>> = OnceLock::new();
 
+#[allow(clippy::zero_prefixed_literal)]
 pub fn shake_flag_shift_map() -> &'static HashMap<u8, u8> {
     SHAKE_FLAG_SHIFT_MAP.get_or_init(|| {
-        
         let data: [(u8, u8); 40] = [
-
             (000, 0x3F),
             (004, 0x3E),
             (008, 0x3D),
@@ -19,7 +17,7 @@ pub fn shake_flag_shift_map() -> &'static HashMap<u8, u8> {
             (009, 0x38),
             (013, 0x37),
             (017, 0x36),
-
+            //
             (100, 0x2F),
             (104, 0x2E),
             (108, 0x2D),
@@ -30,7 +28,7 @@ pub fn shake_flag_shift_map() -> &'static HashMap<u8, u8> {
             (109, 0x28),
             (113, 0x27),
             (117, 0x26),
-
+            //
             (102, 0x1F),
             (106, 0x1E),
             (110, 0x1D),
@@ -41,7 +39,7 @@ pub fn shake_flag_shift_map() -> &'static HashMap<u8, u8> {
             (111, 0x18),
             (115, 0x17),
             (119, 0x16),
-
+            //
             (002, 0x0F),
             (006, 0x0E),
             (010, 0x0D),
@@ -64,7 +62,6 @@ static ELECTRICAL_FLAG_SHIFT_MAP: OnceLock<HashMap<u8, &'static [u8]>> = OnceLoc
 
 pub fn electrical_flag_shift_map() -> &'static HashMap<u8, &'static [u8]> {
     ELECTRICAL_FLAG_SHIFT_MAP.get_or_init(|| {
-
         let data: [(u8, &'static [u8]); 2] = [
             (000, &[0x1F, 0x1E, 0x1D, 0x1C]),
             (100, &[0x0F, 0x0E, 0x0D, 0x0C]),
@@ -88,25 +85,22 @@ pub fn on_connected_message() -> &'static Vec<Message> {
                     uuid: "Connected".into(),
                     keep: false,
                     priority: 0,
-                    tracks: vec![
-                        Track {
-                            start_time: 0,
-                            end_time: 100,
-                            stop_name: "".into(),
-                            start_intensity: 20,
-                            end_intensity: 20,
-                            intensity_mode: IntensityMode::Const,
-                            action_type: ActionType::Shake,
-                            once: false,
-                            interval: 0,
-                            index: vec![
-                                0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
-                                10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
-                                100, 101, 102, 103, 104, 105, 106, 107, 108, 109,
-                                110, 111, 112, 113, 114, 115, 116, 117, 118, 119,
-                            ],
-                        },
-                    ],
+                    tracks: vec![Track {
+                        start_time: 0,
+                        end_time: 100,
+                        stop_name: "".into(),
+                        start_intensity: 20,
+                        end_intensity: 20,
+                        intensity_mode: IntensityMode::Const,
+                        action_type: ActionType::Shake,
+                        once: false,
+                        interval: 0,
+                        index: vec![
+                            0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+                            100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113,
+                            114, 115, 116, 117, 118, 119,
+                        ],
+                    }],
                 },
             },
             Message {
@@ -116,22 +110,18 @@ pub fn on_connected_message() -> &'static Vec<Message> {
                     uuid: "Connected".into(),
                     keep: false,
                     priority: 0,
-                    tracks: vec![
-                        Track {
-                            start_time: 0,
-                            end_time: 0,
-                            stop_name: "".into(),
-                            start_intensity: 30,
-                            end_intensity: 0,
-                            intensity_mode: IntensityMode::Fade,
-                            action_type: ActionType::Electrical,
-                            once: true,
-                            interval: 0,
-                            index: vec![
-                                0, 100
-                            ],
-                        },
-                    ],
+                    tracks: vec![Track {
+                        start_time: 0,
+                        end_time: 0,
+                        stop_name: "".into(),
+                        start_intensity: 30,
+                        end_intensity: 0,
+                        intensity_mode: IntensityMode::Fade,
+                        action_type: ActionType::Electrical,
+                        once: true,
+                        interval: 0,
+                        index: vec![0, 100],
+                    }],
                 },
             },
             Message {
@@ -141,25 +131,22 @@ pub fn on_connected_message() -> &'static Vec<Message> {
                     uuid: "Connected".into(),
                     keep: false,
                     priority: 0,
-                    tracks: vec![
-                        Track {
-                            start_time: 0,
-                            end_time: 100,
-                            stop_name: "".into(),
-                            start_intensity: 20,
-                            end_intensity: 20,
-                            intensity_mode: IntensityMode::Const,
-                            action_type: ActionType::Shake,
-                            once: false,
-                            interval: 0,
-                            index: vec![
-                                0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
-                                10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
-                                100, 101, 102, 103, 104, 105, 106, 107, 108, 109,
-                                110, 111, 112, 113, 114, 115, 116, 117, 118, 119,
-                            ],
-                        },
-                    ],
+                    tracks: vec![Track {
+                        start_time: 0,
+                        end_time: 100,
+                        stop_name: "".into(),
+                        start_intensity: 20,
+                        end_intensity: 20,
+                        intensity_mode: IntensityMode::Const,
+                        action_type: ActionType::Shake,
+                        once: false,
+                        interval: 0,
+                        index: vec![
+                            0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+                            100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113,
+                            114, 115, 116, 117, 118, 119,
+                        ],
+                    }],
                 },
             },
             Message {
@@ -169,22 +156,18 @@ pub fn on_connected_message() -> &'static Vec<Message> {
                     uuid: "Connected".into(),
                     keep: false,
                     priority: 0,
-                    tracks: vec![
-                        Track {
-                            start_time: 0,
-                            end_time: 0,
-                            stop_name: "".into(),
-                            start_intensity: 30,
-                            end_intensity: 0,
-                            intensity_mode: IntensityMode::Fade,
-                            action_type: ActionType::Electrical,
-                            once: true,
-                            interval: 0,
-                            index: vec![
-                                0, 100
-                            ],
-                        },
-                    ],
+                    tracks: vec![Track {
+                        start_time: 0,
+                        end_time: 0,
+                        stop_name: "".into(),
+                        start_intensity: 30,
+                        end_intensity: 0,
+                        intensity_mode: IntensityMode::Fade,
+                        action_type: ActionType::Electrical,
+                        once: true,
+                        interval: 0,
+                        index: vec![0, 100],
+                    }],
                 },
             },
         ]

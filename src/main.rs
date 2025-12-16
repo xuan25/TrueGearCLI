@@ -1,24 +1,17 @@
-use std::error::Error;
-
-mod ble;
-pub mod websocket;
-
-mod controller;
-
-mod true_gear_message;
-
-mod predefined;
-
-mod ble_notify_parser;
-
-mod ble_message_ext;
-
 use crate::websocket::TureGearWebsocketServer;
-
-use clap::{Parser};
+use clap::Parser;
+use std::error::Error;
 use tokio::signal;
 use tracing::Level;
 use tracing_subscriber::FmtSubscriber;
+
+mod ble;
+mod ble_message_ext;
+mod ble_notify_parser;
+mod controller;
+mod predefined;
+mod true_gear_message;
+mod websocket;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -27,7 +20,7 @@ struct Args {
     #[arg(short, long, default_value_t = String::from("127.0.0.1:18233"), help = "Address to listen on for WebSocket connections")]
     listen_addr: String,
 
-    // Strength factor of the Electical effect 
+    // Strength factor of the Electical effect
     #[arg(short, long, default_value_t = 1 as f32, help = "Strength factor of the Electical effect (usually between 0.0 to 1.5)")]
     electical_effect_factor: f32,
 
@@ -44,14 +37,11 @@ fn setup_logging(log_level: Level) {
         // completes the builder.
         .finish();
 
-    tracing::subscriber::set_global_default(subscriber)
-        .expect("setting default subscriber failed");
-    
+    tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
 }
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
-
     let args = Args::parse();
 
     let mut log_level = Level::INFO;
@@ -62,11 +52,13 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
 
     setup_logging(log_level);
 
-    let mut true_gear_controller = controller::TrueGearBLEController::build(args.electical_effect_factor).await;
+    let mut true_gear_controller =
+        controller::TrueGearBLEController::build(args.electical_effect_factor).await;
     true_gear_controller.set_electical_effect_ratio(args.electical_effect_factor);
     true_gear_controller.start().await?;
 
-    let websocket_server = TureGearWebsocketServer::new(args.listen_addr, true_gear_controller.clone());
+    let websocket_server =
+        TureGearWebsocketServer::new(args.listen_addr, true_gear_controller.clone());
     let websocket_server_clone = websocket_server.clone();
     tokio::spawn(async move {
         if let Err(e) = websocket_server_clone.run().await {

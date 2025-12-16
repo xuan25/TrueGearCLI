@@ -1,15 +1,10 @@
-
-use std::error::Error;
-
-use std::sync::Arc;
-use std::{
-    net::SocketAddr,
-};
-
+use crate::controller::TrueGearBLEController;
 use futures::SinkExt;
 use futures::stream::SplitSink;
-use futures_util::{StreamExt};
-
+use futures_util::StreamExt;
+use std::error::Error;
+use std::net::SocketAddr;
+use std::sync::Arc;
 use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::Mutex;
@@ -17,17 +12,16 @@ use tokio_tungstenite::tungstenite::handshake::server::{ErrorResponse, Request, 
 use tokio_tungstenite::tungstenite::protocol::CloseFrame;
 use tokio_tungstenite::{WebSocketStream, tungstenite};
 
-use crate::controller::TrueGearBLEController;
+type WebSocketSink = SplitSink<WebSocketStream<TcpStream>, tokio_tungstenite::tungstenite::Message>;
 
 #[derive(Clone)]
 pub struct TureGearWebsocketServer {
     addr: String,
     true_gear_controller: TrueGearBLEController,
-    connections_outgoings: Arc<Mutex<Vec<SplitSink<WebSocketStream<TcpStream>, tokio_tungstenite::tungstenite::Message>>>>,
+    connections_outgoings: Arc<Mutex<Vec<WebSocketSink>>>,
 }
 
 impl TureGearWebsocketServer {
-
     pub fn new(addr: String, true_gear_controller: TrueGearBLEController) -> Self {
         TureGearWebsocketServer {
             addr,
@@ -37,17 +31,27 @@ impl TureGearWebsocketServer {
     }
 
     async fn accept_async_with_path<T: AsyncRead + AsyncWrite + Unpin>(
-        socket: T
-    ) -> (Result<WebSocketStream<T>, tungstenite::Error>, Option<String>) {
+        socket: T,
+    ) -> (
+        Result<WebSocketStream<T>, tungstenite::Error>,
+        Option<String>,
+    ) {
         let mut path = None;
         let callback = |req: &Request, res: Response| -> Result<Response, ErrorResponse> {
             path = Some(req.uri().path().to_string());
             Ok(res)
         };
-        (tokio_tungstenite::accept_hdr_async(socket, callback).await, path)
+        (
+            tokio_tungstenite::accept_hdr_async(socket, callback).await,
+            path,
+        )
     }
 
-    async fn handle_v1(mut self, ws_stream: WebSocketStream<TcpStream>, addr: SocketAddr) -> Result<(), Box<dyn std::error::Error + Send + Sync>>  {
+    async fn handle_v1(
+        mut self,
+        ws_stream: WebSocketStream<TcpStream>,
+        addr: SocketAddr,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         tracing::info!("Handling v1 connection from: {}", addr);
 
         let (sink, mut source) = ws_stream.split();
@@ -55,7 +59,6 @@ impl TureGearWebsocketServer {
         self.connections_outgoings.lock().await.push(sink);
 
         while let Some(msg) = source.next().await {
-
             let Ok(msg) = msg else {
                 tracing::warn!("Received empty message from {}", addr);
                 continue;
@@ -72,7 +75,11 @@ impl TureGearWebsocketServer {
 
                     tracing::debug!("Received a message from {}: {:?}", addr, control_message);
 
-                    match self.true_gear_controller.send_ble_message(control_message).await {
+                    match self
+                        .true_gear_controller
+                        .send_ble_message(control_message)
+                        .await
+                    {
                         Ok(_) => tracing::debug!("Command sent successfully"),
                         Err(e) => tracing::error!("Failed to send command: {}", e),
                     }
@@ -86,20 +93,25 @@ impl TureGearWebsocketServer {
                     continue;
                 }
             }
-            
+
             // let msg = msg.unwrap().to_text().unwrap().to_string();
         }
-        
+
         tracing::debug!("Closing connection: {}", addr);
 
         let mut connections_outgoings = self.connections_outgoings.lock().await;
-        if let Some(sink_idx) = connections_outgoings.iter().position(|e| e.is_pair_of(&source)) {
+        if let Some(sink_idx) = connections_outgoings
+            .iter()
+            .position(|e| e.is_pair_of(&source))
+        {
             let mut sink = connections_outgoings.remove(sink_idx);
             tracing::debug!("Sending close message to {}", addr);
-            let _ = sink.send(tungstenite::Message::Close(Some(CloseFrame{
-                code: tungstenite::protocol::frame::coding::CloseCode::Normal,
-                reason: "Connection closed".into(),
-            }))).await;
+            let _ = sink
+                .send(tungstenite::Message::Close(Some(CloseFrame {
+                    code: tungstenite::protocol::frame::coding::CloseCode::Normal,
+                    reason: "Connection closed".into(),
+                })))
+                .await;
         }
 
         tracing::info!("Connection closed: {}", addr);
@@ -107,12 +119,17 @@ impl TureGearWebsocketServer {
         Ok(())
     }
 
-    async fn handle_connection(self, raw_stream: TcpStream, addr: SocketAddr) -> Result<(), Box<dyn std::error::Error + Send + Sync>>  {
+    async fn handle_connection(
+        self,
+        raw_stream: TcpStream,
+        addr: SocketAddr,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         tracing::debug!("Incoming TCP connection from: {}", addr);
 
-        let (ws_stream_result, path) = TureGearWebsocketServer::accept_async_with_path(raw_stream)
-            .await;
-        let mut ws_stream = ws_stream_result.expect("Error during the websocket handshake occurred");
+        let (ws_stream_result, path) =
+            TureGearWebsocketServer::accept_async_with_path(raw_stream).await;
+        let mut ws_stream =
+            ws_stream_result.expect("Error during the websocket handshake occurred");
 
         tracing::debug!("WebSocket connection established: {}", addr);
 
@@ -122,24 +139,28 @@ impl TureGearWebsocketServer {
             }
             Some(p) => {
                 tracing::warn!("Unknown path: {}", p);
-                ws_stream.close(Some(CloseFrame { 
-                    code: tungstenite::protocol::frame::coding::CloseCode::Policy, 
-                    reason: "Unknown path".into() 
-                })).await?;
+                ws_stream
+                    .close(Some(CloseFrame {
+                        code: tungstenite::protocol::frame::coding::CloseCode::Policy,
+                        reason: "Unknown path".into(),
+                    }))
+                    .await?;
                 tracing::warn!("Connection closed: {}", addr);
                 return Ok(());
             }
             None => {
                 tracing::warn!("No path in the request");
-                ws_stream.close(Some(CloseFrame { 
-                    code: tungstenite::protocol::frame::coding::CloseCode::Policy, 
-                    reason: "No path in the request".into() 
-                })).await?;
+                ws_stream
+                    .close(Some(CloseFrame {
+                        code: tungstenite::protocol::frame::coding::CloseCode::Policy,
+                        reason: "No path in the request".into(),
+                    }))
+                    .await?;
                 tracing::warn!("Connection closed: {}", addr);
                 return Ok(());
             }
         }
-        
+
         Ok(())
     }
 
@@ -164,15 +185,13 @@ impl TureGearWebsocketServer {
 
         let mut connections = self.connections_outgoings.lock().await;
         for conn in connections.iter_mut() {
-            conn.send(tungstenite::Message::Close(
-                Some(CloseFrame {
-                    code: tungstenite::protocol::frame::coding::CloseCode::Normal,
-                    reason: "Server is shutting down".into(),
-                })
-            )).await?;
+            conn.send(tungstenite::Message::Close(Some(CloseFrame {
+                code: tungstenite::protocol::frame::coding::CloseCode::Normal,
+                reason: "Server is shutting down".into(),
+            })))
+            .await?;
         }
 
         Ok(())
     }
 }
-
