@@ -191,7 +191,7 @@ Electrical Stimulation Intensity; Low-Intensity Testing; 150%
 
 ## Device Status Notifications
 
-
+```
 |=========================================================================|
 |                               Batt Segment                              |
 |=========================================================================|
@@ -226,7 +226,7 @@ battery level range from 0x0CF7 (cutoff) to 0x1026 (fully charged)
     where 0x1026 is 4134 in decimal, which could means voltage in mV (4.134V)
     and 0x0CF7 is 3319 in decimal (3.319V)
 
-
+```
 
 ### Examples
 
