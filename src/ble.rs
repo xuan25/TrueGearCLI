@@ -256,7 +256,7 @@ impl TrueGearBLEConnection {
                     data.value
                 );
                 match data.uuid {
-                    SERVICE_UUID_CENTER_WRITE_CHARACTERISTICS => {
+                    SERVICE_UUID_CENTER_NOTIFY_CHARACTERISTICS => {
                         if let Some(callback) = &*self.on_message_received.lock().await {
                             callback(&data.value);
                         }
