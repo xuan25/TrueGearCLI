@@ -56,3 +56,9 @@ Options:
   -V, --version
           Print version
 ```
+
+## Known issues
+
+- Not compatible with `Arkenage` and `Dungeons of Eternity` due to the lack of support for the following WebSocket methods:
+   - `register_app`
+   - `play_effect_by_uuid`
