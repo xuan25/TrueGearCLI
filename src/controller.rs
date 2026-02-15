@@ -67,6 +67,36 @@ impl TrueGearBLEController {
         self.true_gear_connection.disconnect().await
     }
 
+        pub async fn fill_buffer_from_message<'a>(
+        &mut self,
+        message: &true_gear_message::Message,
+        buffer: &'a mut Vec<u8>,
+    ) -> Result<&'a Vec<u8>, Box<dyn Error + Send + Sync>> {
+        match message.method.as_str() {
+            "play_no_registered" => {
+                let effect = message.get_effect().ok_or_else(|| {
+                    tracing::error!("Failed to parse effect from message body: {}", message.body);
+                    Box::new(std::io::Error::new(
+                        std::io::ErrorKind::InvalidInput,
+                        format!("Failed to parse effect from message body: {}", message.body),
+                    ))
+                })?;
+
+                effect.write_ble_bytes_to(buffer, self.electical_effect_ratio)
+
+                // TODO: handle uuid registration?
+            }
+            // TODO: handle method: register_app
+            // TODO: handle method: play_effect_by_uuid
+            _ => {
+                return Err(Box::new(std::io::Error::new(
+                    std::io::ErrorKind::InvalidInput,
+                    format!("Unsupported method: {}", message.method),
+                )) as Box<dyn Error + Send + Sync>)
+            }
+        }
+    }
+
     pub async fn send_ble_messages(
         &mut self,
         messages: &[true_gear_message::Message],
@@ -75,7 +105,7 @@ impl TrueGearBLEController {
 
         for message in &mut messages.iter() {
             let mut buffer_effect: Vec<u8> = Vec::new();
-            message.write_ble_bytes_to(&mut buffer_effect, self.electical_effect_ratio)?;
+            self.fill_buffer_from_message(message, &mut buffer_effect).await?;
             buffer.extend(buffer_effect);
         }
 
@@ -84,12 +114,13 @@ impl TrueGearBLEController {
         self.true_gear_connection.send_data(&buffer).await
     }
 
-    pub async fn send_ble_message(
+    pub async fn handle_message(
         &mut self,
         message: true_gear_message::Message,
     ) -> Result<(), Box<dyn Error + Send + Sync>> {
         let mut buffer: Vec<u8> = Vec::new();
-        message.write_ble_bytes_to(&mut buffer, self.electical_effect_ratio)?;
+
+        self.fill_buffer_from_message(&message, &mut buffer).await?;
 
         tracing::debug!("Sending message bytes ({}): {:02X?}", buffer.len(), buffer);
 

@@ -101,7 +101,7 @@ pub fn on_connected_message() -> &'static Vec<Message> {
                             114, 115, 116, 117, 118, 119,
                         ],
                     }],
-                },
+                }.to_message_body().unwrap(),
             },
             Message {
                 method: "play_no_registered".into(),
@@ -122,7 +122,7 @@ pub fn on_connected_message() -> &'static Vec<Message> {
                         interval: 0,
                         index: vec![0, 100],
                     }],
-                },
+                }.to_message_body().unwrap(),
             },
             Message {
                 method: "play_no_registered".into(),
@@ -147,7 +147,7 @@ pub fn on_connected_message() -> &'static Vec<Message> {
                             114, 115, 116, 117, 118, 119,
                         ],
                     }],
-                },
+                }.to_message_body().unwrap(),
             },
             Message {
                 method: "play_no_registered".into(),
@@ -168,7 +168,7 @@ pub fn on_connected_message() -> &'static Vec<Message> {
                         interval: 0,
                         index: vec![0, 100],
                     }],
-                },
+                }.to_message_body().unwrap(),
             },
         ]
     })

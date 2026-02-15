@@ -1,22 +1,20 @@
 use crate::true_gear_message;
 use std::error::Error;
+use base64::Engine;
 
 enum IntensityModeSingleTrack {
     Const,
     Fade,
 }
 
-impl true_gear_message::Message {
-    pub fn write_ble_bytes_to<'a>(
-        &self,
-        buffer: &'a mut Vec<u8>,
-        electical_effect_ratio: f32,
-    ) -> Result<&'a Vec<u8>, Box<dyn Error + Send + Sync>> {
-        self.body.write_ble_bytes_to(buffer, electical_effect_ratio)
-    }
-}
-
 impl true_gear_message::Effect {
+
+    pub fn to_message_body(&self) -> Result<String, Box<dyn Error + Send + Sync>> {
+        let raw_json = serde_json::to_string(self)?;
+        let base64_encoded = base64::engine::general_purpose::STANDARD.encode(raw_json);
+        Ok(base64_encoded)
+    }
+
     pub fn write_ble_bytes_to<'a>(
         &self,
         buffer: &'a mut Vec<u8>,

@@ -1,33 +1,5 @@
 use serde::{Deserialize, Serialize};
-
-mod body_as_base64_string {
-    use base64::{Engine as _, engine::general_purpose};
-    use serde::de::DeserializeOwned;
-    use serde::{Deserialize, Deserializer, Serialize, Serializer, de};
-
-    pub fn serialize<S, T>(value: &T, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-        T: Serialize,
-    {
-        let bytes = serde_json::to_vec(value).map_err(serde::ser::Error::custom)?;
-        let b64 = general_purpose::STANDARD.encode(bytes);
-        serializer.serialize_str(&b64)
-    }
-
-    pub fn deserialize<'de, D, T>(deserializer: D) -> Result<T, D::Error>
-    where
-        D: Deserializer<'de>,
-        T: DeserializeOwned,
-    {
-        let b64 = String::deserialize(deserializer)?;
-        let bytes = general_purpose::STANDARD
-            .decode(b64)
-            .map_err(de::Error::custom)?;
-        // base64 bytes -> struct (from JSON)
-        serde_json::from_slice(&bytes).map_err(de::Error::custom)
-    }
-}
+use base64::Engine;
 
 mod bool_as_string {
     use serde::{Deserialize, Deserializer, Serializer, de};
@@ -57,8 +29,23 @@ mod bool_as_string {
 pub struct Message {
     #[serde(alias = "Method")]
     pub method: String,
-    #[serde(alias = "Body", with = "body_as_base64_string")]
-    pub body: Effect,
+    #[serde(alias = "Body")]
+    pub body: String,
+}
+
+impl Message {
+    pub fn from_text(text: &str) -> Result<Self, serde_json::Error> {
+        serde_json::from_str(text)
+    }
+
+    pub fn get_effect(&self) -> Option<Effect> {
+        if self.method != "play_no_registered" {
+            return None;
+        }
+        let b64 = self.body.as_str();
+        let bytes = base64::engine::general_purpose::STANDARD.decode(b64).ok()?;
+        serde_json::from_slice(&bytes).ok()
+    }
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]

@@ -1,4 +1,5 @@
 use crate::controller::TrueGearBLEController;
+use crate::true_gear_message::Message;
 use futures::SinkExt;
 use futures::stream::SplitSink;
 use futures_util::StreamExt;
@@ -68,7 +69,7 @@ impl TureGearWebsocketServer {
 
             match msg {
                 tungstenite::Message::Text(text) => {
-                    let Ok(control_message) = serde_json::from_str(text.as_str()) else {
+                    let Ok(control_message) = Message::from_text(text.as_str()) else {
                         tracing::error!("Failed to parse message from {}: {}", addr, text);
                         continue;
                     };
@@ -77,7 +78,7 @@ impl TureGearWebsocketServer {
 
                     match self
                         .true_gear_controller
-                        .send_ble_message(control_message)
+                        .handle_message(control_message)
                         .await
                     {
                         Ok(_) => tracing::debug!("Command sent successfully"),
